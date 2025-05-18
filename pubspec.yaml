@@ -30,7 +30,13 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+
   http: ^1.2.1
+  flutter_launcher_icons: ^0.14.3
+
+flutter_launcher_icons:
+  android: "assets/icon/android_icon.png" # Specific icon for Android
+  image_path: "assets/icon/icon.png"     # Generic icon path
 
   # cupertino_icons: ^1.0.8
 
