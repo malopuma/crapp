@@ -15,6 +15,13 @@ class CrystalInfo {
   final String? doi;
   final String? year;
 
+  // New User-Editable Fields
+  String? crystalSystem;
+  String? solubility;
+  String? cleavagePlanes;
+  String? appearance;
+  double? laueExposureTime; // Changed to double for numerical value
+
   CrystalInfo({
     required this.codId,
     this.chemicalName,
@@ -28,10 +35,17 @@ class CrystalInfo {
     this.gamma,
     this.title,
     this.doi,
-    this.year
+    this.year,
+    // Initialize new fields
+    this.crystalSystem,
+    this.solubility,
+    this.cleavagePlanes,
+    this.appearance,
+    this.laueExposureTime,
   });
 
-  // Factory constructor to create a CrystalInfo instance from a JSON map
+  // Factory constructor to create a CrystalInfo instance from a JSON map (from COD)
+  // This constructor will primarily populate fields from the COD database.
   factory CrystalInfo.fromJson(Map<String, dynamic> json) {
     return CrystalInfo(
       codId: json['file'] ?? 'N/A', // 'file' is the key for COD ID
@@ -46,7 +60,69 @@ class CrystalInfo {
       gamma: json['gamma'],
       title: json['title'],
       doi: json['doi'],
-      year: json['year']
+      year: json['year'],
+      
+      // New fields will typically be null when fetched from COD
+      crystalSystem: null,
+      solubility: null,
+      cleavagePlanes: null,
+      appearance: null,
+      laueExposureTime: null,
+    );
+  }
+
+  // --- IMPORTANT NEW PART FOR DATABASE INTERACTION ---
+  // Method to convert a CrystalInfo instance into a Map for database insertion/update
+  // This is crucial for sqflite.
+  Map<String, dynamic> toMap() {
+    return {
+      'codId': codId,
+      'chemicalName': chemicalName,
+      'mineral': mineral,
+      'spaceGroup': spaceGroup,
+      'a': a,
+      'b': b,
+      'c': c,
+      'alpha': alpha,
+      'beta': beta,
+      'gamma': gamma,
+      'title': title,
+      'doi': doi,
+      'year': year,
+      
+      // Include new user-editable fields
+      'crystalSystem': crystalSystem,
+      'solubility': solubility,
+      'cleavagePlanes': cleavagePlanes,
+      'appearance': appearance,
+      'laueExposureTime': laueExposureTime,
+    };
+  }
+
+  // Factory constructor to create a CrystalInfo instance from a Map (from database)
+  // This is crucial for sqflite to read data back.
+  factory CrystalInfo.fromMap(Map<String, dynamic> map) {
+    return CrystalInfo(
+      codId: map['codId'],
+      chemicalName: map['chemicalName'],
+      mineral: map['mineral'],
+      spaceGroup: map['spaceGroup'],
+      a: map['a'],
+      b: map['b'],
+      c: map['c'],
+      alpha: map['alpha'],
+      beta: map['beta'],
+      gamma: map['gamma'],
+      title: map['title'],
+      doi: map['doi'],
+      year: map['year'],
+
+      // Populate new user-editable fields from the database map
+      crystalSystem: map['crystalSystem'],
+      solubility: map['solubility'],
+      cleavagePlanes: map['cleavagePlanes'],
+      appearance: map['appearance'],
+      laueExposureTime: map['laueExposureTime'],
     );
   }
 
@@ -65,6 +141,12 @@ class CrystalInfo {
     Title: ${title ?? 'N/A'}
     DOI: ${doi ?? 'N/A'}
     Year: ${year ?? 'N/A'}
+    --- User Notes ---
+    Crystal System: ${crystalSystem ?? 'N/A'}
+    Solubility: ${solubility ?? 'N/A'}
+    Cleavage Planes: ${cleavagePlanes ?? 'N/A'}
+    Appearance: ${appearance ?? 'N/A'}
+    Laue Exposure Time: ${laueExposureTime != null ? '${laueExposureTime} units' : 'N/A'}
     ----------------------------------
     ''';
   }
