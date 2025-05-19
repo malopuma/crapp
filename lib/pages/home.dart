@@ -19,7 +19,7 @@ class _HomeState extends State<Home> {
     return Scaffold(
       
       appBar: AppBar(
-        title: Text('Crapp'),
+        title: Text('CRAP - the crystals app'),
       ),
 
       body: Column(

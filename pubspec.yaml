@@ -36,7 +36,7 @@ dependencies:
 
 flutter_launcher_icons:
   android: true
-  image_path: "assets/icon/icon.png"     # Generic icon path
+  image_path: "assets/icon/icon_crap.png"     # Generic icon path
 
   # cupertino_icons: ^1.0.8
 
