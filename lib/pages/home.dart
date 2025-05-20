@@ -46,6 +46,15 @@ class _HomeState extends State<Home> {
             ),
           ),
           
+          Container(
+            padding: EdgeInsets.all(6),
+            child: FloatingActionButton(
+              heroTag: null,
+              onPressed: () {Navigator.pushNamed(context, '/SavedCrystals');},
+              child: Text('Saved Crystals'),
+            ),
+          ),
+
         ],
 
       )

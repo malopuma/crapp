@@ -1,7 +1,10 @@
+// lib/cod_search_page.dart
+
 import 'dart:convert';
-import 'package:flutter/material.dart'; // Import Material library
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:coda/db_stuff/crystal_info.dart'; // Assuming crystal_info.dart is in the lib folder
+import 'package:coda/db_stuff/crystal_info.dart';
+import 'package:coda/db_stuff/database_helper.dart';
 
 class CodSearchPage extends StatefulWidget {
   const CodSearchPage({super.key});
@@ -11,16 +14,16 @@ class CodSearchPage extends StatefulWidget {
 }
 
 class _CodSearchPageState extends State<CodSearchPage> {
-  // Controller for the TextField
   final TextEditingController _formulaController = TextEditingController();
-  
-  // State variables
+
   List<CrystalInfo> _crystalResults = [];
   bool _isLoading = false;
   String? _errorMessage;
   String _searchQueryInfo = "Please enter a chemical formula and press search. The entered material will be searched in the Crystal Open Database.";
 
-  // --- Our existing fetchCrystalData function, slightly modified ---
+  // Instance of the DatabaseHelper
+  final DatabaseHelper _dbHelper = DatabaseHelper();
+
   Future<void> _fetchCrystalData(String chemicalFormula) async {
     if (chemicalFormula.isEmpty) {
       setState(() {
@@ -35,48 +38,32 @@ class _CodSearchPageState extends State<CodSearchPage> {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
-      _crystalResults = []; // Clear previous results
+      _crystalResults = [];
       _searchQueryInfo = "Searching for: $chemicalFormula...";
     });
 
-    // Reorganize the input String
-
-    // This regular expression is for splitting the string on its capitals
     RegExp splitElements = RegExp(r'(?=[A-Z])');
-
-    // Make a list of all elements the chemicalFormule contains
     List<String> elements = chemicalFormula.split(splitElements);
     elements.sort();
 
-    for (String element in elements) {
-      element.trim();
-    }
-
-    // Create a new String from the elements:
     final elementBuffer = StringBuffer();
-
     for (String element in elements) {
       elementBuffer.write(element);
       elementBuffer.write('%20');
     }
 
-    String formattedFormulaLong = elementBuffer.toString();
-
     String cutLastThreeLetters(String inputString) {
       if (inputString.length >= 3) {
-        String formattedFormula = inputString.substring(0, inputString.length -3);
+        String formattedFormula = inputString.substring(0, inputString.length - 3);
         return formattedFormula;
-      }
-      else {
+      } else {
         return 'formattedFormula() failed';
       }
     }
 
-    String formattedFormula = cutLastThreeLetters(formattedFormulaLong);
+    String formattedFormula = cutLastThreeLetters(elementBuffer.toString());
 
-    //String formattedFormula = chemicalFormula.replaceAll(' ', '%20');
-    var url = Uri.parse(
-        'https://www.crystallography.net/cod/result?formula=$formattedFormula&format=json');
+    var url = Uri.parse('https://www.crystallography.net/cod/result?formula=$formattedFormula&format=json');
 
     try {
       var response = await http.get(url);
@@ -95,14 +82,14 @@ class _CodSearchPageState extends State<CodSearchPage> {
           if (tempList.isEmpty) {
             _searchQueryInfo = "No results found for '$chemicalFormula'.";
           } else {
-             _searchQueryInfo = "Showing ${tempList.length} results for '$chemicalFormula'.";
+            _searchQueryInfo = "Showing ${tempList.length} results for '$chemicalFormula'.";
           }
         });
       } else {
         setState(() {
           _errorMessage = 'Failed to load data. Status code: ${response.statusCode}\nResponse: ${response.body}';
           _isLoading = false;
-           _searchQueryInfo = "Error fetching data for '$chemicalFormula'.";
+          _searchQueryInfo = "Error fetching data for '$chemicalFormula'.";
         });
       }
     } catch (e) {
@@ -113,11 +100,32 @@ class _CodSearchPageState extends State<CodSearchPage> {
       });
     }
   }
-  // --- End of fetchCrystalData ---
+
+  // Function to save CrystalInfo to the database
+  Future<void> _saveCrystalInfo(CrystalInfo crystalInfo) async {
+    try {
+      await _dbHelper.insertCrystalInfo(crystalInfo);
+      // Show a SnackBar to confirm saving
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Saved "${crystalInfo.chemicalName ?? crystalInfo.codId}" to local database!'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      // Show an error SnackBar if saving fails
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to save crystal: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
 
   @override
   void dispose() {
-    // Dispose the controller when the widget is removed from the widget tree
     _formulaController.dispose();
     super.dispose();
   }
@@ -133,8 +141,6 @@ class _CodSearchPageState extends State<CodSearchPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            
-            // Input field
             TextField(
               controller: _formulaController,
               decoration: const InputDecoration(
@@ -142,32 +148,26 @@ class _CodSearchPageState extends State<CodSearchPage> {
                 hintText: 'e.g.NaCl',
                 border: OutlineInputBorder(),
               ),
-              onSubmitted: (value) { // Optional: Allow search on keyboard submit
-                 if (value.isNotEmpty) {
+              onSubmitted: (value) {
+                if (value.isNotEmpty) {
                   _fetchCrystalData(value);
                 }
               },
             ),
-
             const SizedBox(height: 16.0),
-
-            // Search button
             ElevatedButton(
-              onPressed: _isLoading ? null : () { // Disable button while loading
+              onPressed: _isLoading ? null : () {
                 _fetchCrystalData(_formulaController.text);
               },
-              child: _isLoading 
+              child: _isLoading
                   ? const SizedBox(
-                      height: 20, 
-                      width: 20, 
+                      height: 20,
+                      width: 20,
                       child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)
-                    ) 
+                    )
                   : const Text('Search'),
             ),
-
             const SizedBox(height: 24.0),
-
-            // --- Display Area ---
             Text(_searchQueryInfo, style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 8.0),
             if (_errorMessage != null)
@@ -179,15 +179,12 @@ class _CodSearchPageState extends State<CodSearchPage> {
                   textAlign: TextAlign.center,
                 ),
               ),
-            // Results list (basic for now)
-            // Inside the build method of _CrystalSearchPageState
-
             Expanded(
               child: _crystalResults.isEmpty && !_isLoading && _errorMessage == null
                   ? Center(
                       child: Text(
                         _formulaController.text.isEmpty && _crystalResults.isEmpty
-                            ? "" 
+                            ? ""
                             : "No results to display.",
                         style: Theme.of(context).textTheme.bodyLarge,
                       ),
@@ -196,27 +193,23 @@ class _CodSearchPageState extends State<CodSearchPage> {
                       itemCount: _crystalResults.length,
                       itemBuilder: (context, index) {
                         final crystal = _crystalResults[index];
-                        // Updated Card to display more CrystalInfo fields
                         return Card(
                           margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
-                          elevation: 2.0, // Add a little shadow
+                          elevation: 2.0,
                           child: Padding(
                             padding: const EdgeInsets.all(12.0),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: <Widget>[
-                                
                                 Text(
                                   'Chemical Name: ${crystal.chemicalName ?? "N/A"}',
                                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                                 ),
-
                                 const SizedBox(height: 4),
-
                                 Text('COD ID: ${crystal.codId}'),
                                 if (crystal.mineral != null && crystal.mineral!.isNotEmpty) ...[
-                                   const SizedBox(height: 4),
-                                  Text('Mineral: ${crystal.mineral}'),                                 
+                                  const SizedBox(height: 4),
+                                  Text('Mineral: ${crystal.mineral}'),
                                 ],
                                 if (crystal.title != null && crystal.title!.isNotEmpty) ...[
                                   const SizedBox(height: 4),
@@ -248,6 +241,16 @@ class _CodSearchPageState extends State<CodSearchPage> {
                                       Text('b: ${crystal.b ?? "N/A"}  \tbeta: ${crystal.beta ?? "N/A"}°'),
                                       Text('c: ${crystal.c ?? "N/A"}  \tgamma: ${crystal.gamma ?? "N/A"}°'),
                                     ],
+                                  ),
+                                ),
+                                // NEW: Save button for each crystal
+                                const SizedBox(height: 12),
+                                Align(
+                                  alignment: Alignment.bottomRight,
+                                  child: ElevatedButton.icon(
+                                    onPressed: () => _saveCrystalInfo(crystal),
+                                    icon: const Icon(Icons.save),
+                                    label: const Text('Save Crystal'),
                                   ),
                                 ),
                               ],
