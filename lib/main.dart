@@ -1,4 +1,5 @@
 // lib/main.dart
+// github: malopuma/crapp
 
 // crap short crystal app
 // version 1.0.0
