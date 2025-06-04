@@ -15,7 +15,7 @@ class CrystalInfo {
   final String? doi;
   final String? year;
 
-  // New User-Editable Fields
+  // New User-Editable Fields. These field are to be edited by the user.
   String? crystalSystem;
   String? solubility;
   String? cleavagePlanes;
@@ -23,6 +23,7 @@ class CrystalInfo {
   double? laueExposureTime; // Changed to double for numerical value
 
   CrystalInfo({
+    // These fields are fetched from the cod.
     required this.codId,
     this.chemicalName,
     this.mineral,
@@ -36,7 +37,8 @@ class CrystalInfo {
     this.title,
     this.doi,
     this.year,
-    // Initialize new fields
+
+    // Initialize new fields. These field are to be edited by the user.
     this.crystalSystem,
     this.solubility,
     this.cleavagePlanes,
